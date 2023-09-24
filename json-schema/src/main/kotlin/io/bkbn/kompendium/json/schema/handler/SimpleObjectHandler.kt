@@ -16,6 +16,8 @@ import io.bkbn.kompendium.json.schema.definition.TypeDefinition
 import io.bkbn.kompendium.json.schema.exception.UnknownSchemaException
 import io.bkbn.kompendium.json.schema.util.Helpers.getReferenceSlug
 import io.bkbn.kompendium.json.schema.util.Helpers.getSlug
+import java.math.BigDecimal
+import java.time.Instant
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.KType
@@ -72,14 +74,18 @@ object SimpleObjectHandler {
           ?.parameters
           ?.find { it.name == prop.name }
           ?.isOptional
-          ?: throw UnknownSchemaException(
-            """
-            |An unknown type was encountered: $clazz.  This typically indicates that a complex scalar such as dates,
-            |timestamps, or custom number representations such as BigInteger were not added as custom types when
-            |configuring the NotarizedApplication plugin.  If you are still seeing this error despite adding all
-            |required custom types, this indicates a bug in Kompendium, please open an issue on GitHub.
-            """.trimMargin()
-          )
+          ?: if (Instant::class.createType() == type || BigDecimal::class.createType() == type) {
+            throw UnknownSchemaException(
+              """
+              |An unknown type was encountered: $clazz.  This typically indicates that a complex scalar such as dates,
+              |timestamps, or custom number representations such as BigInteger were not added as custom types when
+              |configuring the NotarizedApplication plugin.  If you are still seeing this error despite adding all
+              |required custom types, this indicates a bug in Kompendium, please open an issue on GitHub.
+              """.trimMargin()
+            )
+          } else {
+            false
+          }
       }
       .map { schemaConfigurator.serializableName(it) }
       .toSet()
